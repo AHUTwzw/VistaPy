@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monaco Editor 多文件管理</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+        }
+        #file-tree {
+            width: 200px;
+            background: #1e1e1e;
+            color: white;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        #editor {
+            flex: 1;
+            height: 100vh;
+        }
+        .file-item {
+            cursor: pointer;
+            padding: 5px;
+        }
+        .file-item:hover {
+            background: #333;
+        }
+    </style>
+</head>
+<body>
+    <!-- 文件树 -->
+    <div id="file-tree">
+        <div class="file-item" data-file="script.js">script.js</div>
+        <div class="file-item" data-file="style.css">style.css</div>
+        <div class="file-item" data-file="index.html">index.html</div>
+    </div>
+
+    <!-- 编辑器 -->
+    <div id="editor"></div>
+
+    <!-- 引入 Monaco Editor -->
+    <script src="https://unpkg.com/monaco-editor@0.33.0/min/vs/loader.js"></script>
+    <script>
+        require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@0.33.0/min/vs' }});
+        require(['vs/editor/editor.main'], function() {
+            // 初始化编辑器
+            var editor = monaco.editor.create(document.getElementById('editor'), {
+                value: `// 在这里编写你的代码
+function hello() {
+    console.log("Hello, Monaco Editor!");
+}`,
+                language: 'javascript',
+                theme: 'vs-dark',
+                automaticLayout: true,
+            });
+
+            // 文件内容
+            var files = {
+                'script.js': `// JavaScript 文件
+function hello() {
+    console.log("Hello, Monaco Editor!");
+}`,
+                'style.css': `/* CSS 文件 */
+body {
+    background-color: #1e1e1e;
+    color: white;
+}`,
+                'index.html': `<!-- HTML 文件 -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Project</title>
+</head>
+<body>
+    <h1>Hello, World!</h1>
+</body>
+</html>`
+            };
+
+            // 文件树点击事件
+            document.querySelectorAll('.file-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    var file = item.getAttribute('data-file');
+                    var language = file.split('.').pop(); // 根据文件扩展名设置语言
+                    editor.setValue(files[file]);
+                    monaco.editor.setModelLanguage(editor.getModel(), language);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件编辑器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #file-list {
+            width: 200px;
+            float: left;
+            border-right: 1px solid #ccc;
+            padding-right: 10px;
+        }
+        #file-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        #file-list li {
+            cursor: pointer;
+            padding: 5px;
+            margin: 5px 0;
+            background-color: #f0f0f0;
+            border-radius: 3px;
+        }
+        #file-list li:hover {
+            background-color: #ddd;
+        }
+        #editor {
+            margin-left: 220px;
+        }
+        #editor textarea {
+            width: 100%;
+            height: 400px;
+            font-family: monospace;
+            font-size: 14px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        #save-button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #save-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div id="file-list">
+        <h3>文件列表</h3>
+        <ul id="files"></ul>
+    </div>
+    <div id="editor">
+        <h3>编辑器</h3>
+        <textarea id="file-content" placeholder="选择一个文件进行编辑"></textarea>
+        <button id="save-button" disabled>保存</button>
+    </div>
+
+    <script>
+        let currentFilePath = null;
+
+        // 从 URL 参数中获取目录路径
+        function getDirectoryFromUrl() {
+            return "{{ directory }}"
+        }
+
+        // 加载目录中的文件列表
+        async function loadFiles(directory) {
+            try {
+                const response = await fetch(`/list_files?directory=${encodeURIComponent(directory)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    displayFiles(data.files);
+                } else {
+                    console.error('无法加载文件列表');
+                }
+            } catch (err) {
+                console.error('请求失败:', err);
+            }
+        }
+
+        // 显示文件列表
+        function displayFiles(files) {
+            const fileList = document.getElementById('files');
+            fileList.innerHTML = '';
+            files.forEach(file => {
+                const li = document.createElement('li');
+                li.textContent = file;
+                li.addEventListener('click', () => loadFile(file));
+                fileList.appendChild(li);
+            });
+        }
+
+        // 加载文件内容
+        async function loadFile(fileName) {
+            const directory = getDirectoryFromUrl();
+            try {
+                const response = await fetch(`/load_file?directory=${encodeURIComponent(directory)}&file=${encodeURIComponent(fileName)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('file-content').value = data.content;
+                    document.getElementById('save-button').disabled = false;
+                    currentFilePath = fileName;
+                } else {
+                    console.error('无法加载文件内容');
+                }
+            } catch (err) {
+                console.error('请求失败:', err);
+            }
+        }
+
+        // 保存文件
+        async function saveFile() {
+            if (!currentFilePath) return;
+            const directory = getDirectoryFromUrl();
+            const content = document.getElementById('file-content').value;
+            try {
+                const response = await fetch('/save_file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        directory: directory,
+                        file: currentFilePath,
+                        content: content,
+                    }),
+                });
+                if (response.ok) {
+                    alert('文件保存成功！');
+                } else {
+                    console.error('无法保存文件');
+                }
+            } catch (err) {
+                console.error('请求失败:', err);
+            }
+        }
+
+        // 初始化：加载目录中的文件
+        function init() {
+            const directory = getDirectoryFromUrl();
+            if (directory) {
+                loadFiles(directory);
+            }
+        }
+
+        // 绑定事件
+        document.getElementById('save-button').addEventListener('click', saveFile);
+        init();
+    </script>
+</body>
+</html>

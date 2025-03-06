@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python脚本管理器</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Python脚本管理器</h1>
+        <!-- 打开模态框的按钮 -->
+        <button class="upload-btn" onclick="openModal()">上传脚本</button>
+        <button class="upload-btn" onclick="masterConfig()">主软件库</button>
+
+        <!-- 模态框 -->
+        <div id="uploadModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2>上传脚本文件</h2>
+                <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+                    <label for="file">选择脚本：</label>
+                    <input type="file" id="file" name="file" required>
+                    <br><br>
+                    <label for="project_name">脚本名：</label>
+                    <input type="text" id="project_name" name="project_name" placeholder="请输入脚本名称">
+                    <br><br>
+                    <label for="project_name">描述：</label>
+                    <input type="text" id="description" name="description" placeholder="请输入脚本描述">
+                    <br><br>
+                    <label>python版本：3.9</label>
+<!--                    <label for="python_version">python版本：3.9</label>-->
+<!--                    <input type="text" id="python_version" name="python_version" placeholder="请输入python版本，默认3.9">-->
+                    <br><br>
+                    <div class="buttons">
+                        <button type="button" class="cancel-btn" onclick="closeModal()">取消</button>
+                        <button type="submit" class="submit-btn">提交</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 模态框 -->
+        <div id="masterConfig" class="modal">
+            <div class="container">
+                <h1>Manage requirements.txt</h1>
+                <button id="load-btn">加载 requirements.txt</button>
+                <button id="save-btn" disabled>保存并更新库</button>
+                <button id="update-pip-btn" disabled>更新pip源</button>
+
+                <h2>编辑</h2>
+                <textarea id="edit-area" class="my-textarea"></textarea>
+
+                <pre id="install-result"></pre>
+                <div class="buttons">
+                        <button type="button" class="cancel-btn" onclick="closeMasterConfig()">取消</button>
+                    </div>
+            </div>
+        </div>
+
+        <h2>文件列表</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>脚本名</th>
+                    <th>描述</th>
+                    <th>运行状态</th>
+                    <th>python版本</th>
+                    <th>上传时间</th>
+                    <th>服务器路径</th>
+                    <th>pid</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in files %}
+                <tr>
+                    <td>{{ file[1] }}</td>
+                    <td>{{ file[2] }}</td>
+                    <td>{{ file[3] }}</td>
+                    <td>{{ file[4] }}</td>
+                    <td>{{ file[5] }}</td>
+                    <td>{{ file[6] }}</td>
+                    <td>{{ file[7] }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_file', project=file[1]) }}" class="btn edit">编辑</a>
+                        <button id="start-btn" onclick="handleClick('{{ file[1] }}')" class="btn start">启动</button>
+                        <button id="stop-btn" onclick="handleStop('{{ file[1] }}')" class="btn stop">停止</button>
+                        <a href="{{ url_for('delete_file', project=file[1]) }}" class="btn start">删除</a>
+                        <button id="log-btn" onclick="openLogModal('{{ file[1] }}')" class="btn start">查看日志</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 弹窗 -->
+    <div id="logModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeLogModal()">&times;</span>
+            <div id="logContent"></div>
+        </div>
+    </div>
+    <!-- 引入 JavaScript -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+    <script>
+        // 打开模态框
+        function openModal() {
+            document.getElementById('uploadModal').style.display = 'block';
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('uploadModal').style.display = 'none';
+        }
+
+        // 绑定事件
+<!--        document.getElementById('save-button').addEventListener('click', saveFile);-->
+
+        // 打开模态框
+        function masterConfig() {
+            document.getElementById('masterConfig').style.display = 'block';
+        }
+
+        // 关闭模态框
+        function closeMasterConfig() {
+            document.getElementById('masterConfig').style.display = 'none';
+        }
+
+        document.getElementById('load-btn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/get_requirements');
+                const data = await response.json();
+                document.getElementById('edit-area').value = data.content;
+                document.getElementById('save-btn').disabled = false;
+                document.getElementById('update-pip-btn').disabled = false;
+
+            } catch (error) {
+                console.error('加载失败:', error);
+            }
+        });
+
+        document.getElementById('update-pip-btn').addEventListener('click', async () => {
+            const content = document.getElementById('edit-area').value;
+
+            try {
+                const response = await fetch('/update_pip_source', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+
+                document.getElementById('install-result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                console.error('更新失败:', error);
+            }
+        });
+
+        document.getElementById('save-btn').addEventListener('click', async () => {
+            const content = document.getElementById('edit-area').value;
+
+            try {
+                const response = await fetch('/save_requirements', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ content })
+                });
+                const data = await response.json();
+
+                document.getElementById('install-result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                console.error('保存失败:', error);
+            }
+        });
+
+        function handleClick(rowData) {
+            // 发送 GET 请求，传递行数据
+            const url = `/start?project=${rowData}`;
+            fetch(url, {
+                method: "GET",
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);  // 显示后端返回的消息
+                location.reload(); // 刷新页面
+            })
+            .catch(error => {
+                console.error("请求失败：", error);
+                location.reload(); // 刷新页面
+            });
+        }
+
+        function handleStop(rowData) {
+            // 发送 GET 请求，传递行数据
+            const url = `/stop?project=${rowData}`;
+            fetch(url, {
+                method: "GET",
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);  // 显示后端返回的消息
+                location.reload(); // 刷新页面
+            })
+            .catch(error => {
+                console.error("请求失败：", error);
+                location.reload(); // 刷新页面
+            });
+        }
+    </script>
+</body>
+</html>

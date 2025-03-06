@@ -1,0 +1,21 @@
+<!-- 模态框 -->
+<div id="uploadModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>上传压缩包</h2>
+        <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+            <label for="file">选择工程：</label>
+            <input type="file" id="file" name="file" accept=".zip" required>
+            <br><br>
+            <label for="project_name">工程名：</label>
+            <input type="text" id="project_name" name="project_name" placeholder="请输入工程名">
+            <label for="python_version">python版本：</label>
+            <input type="text" id="python_version" name="python_version" placeholder="请输入python版本，默认3.9">
+            <br><br>
+            <div class="buttons">
+                <button type="button" class="cancel-btn" onclick="closeModal()">取消</button>
+                <button type="submit" class="submit-btn">提交</button>
+            </div>
+        </form>
+    </div>
+</div>

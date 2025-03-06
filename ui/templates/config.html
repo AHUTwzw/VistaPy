@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Requirements Manager</title>
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background-color: #f9f9f9;
+            margin: 5px 0;
+            padding: 5px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Manage requirements.txt</h1>
+        <button id="load-btn">加载 requirements.txt</button>
+        <button id="save-btn" disabled>保存并更新库</button>
+
+        <h2>文本展示</h2>
+        <pre id="text-content"></pre>
+
+        <h2>列表展示</h2>
+        <ul id="list-content"></ul>
+
+        <h2>编辑要求</h2>
+        <textarea id="edit-area"></textarea>
+
+        <pre id="install-result"></pre>
+    </div>
+
+    <script>
+        document.getElementById('load-btn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/get_requirements');
+                const data = await response.json();
+
+                document.getElementById('text-content').textContent = data.content;
+                document.getElementById('list-content').innerHTML = data.lines.map(line => `<li>${line}</li>`).join('');
+                document.getElementById('edit-area').value = data.content;
+
+                document.getElementById('save-btn').disabled = false;
+            } catch (error) {
+                console.error('加载失败:', error);
+            }
+        });
+
+        document.getElementById('save-btn').addEventListener('click', async () => {
+            const content = document.getElementById('edit-area').value;
+
+            try {
+                const response = await fetch('/save_requirements', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ content })
+                });
+                const data = await response.json();
+
+                document.getElementById('install-result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                console.error('保存失败:', error);
+            }
+        });
+    </script>
+</body>
+</html>
